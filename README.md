@@ -24,6 +24,9 @@ Teams user ──SSO──► Azure Bot Service ──► Bot (Container App)   
 5. `/whoami` in the bot compares the Teams `aadObjectId` (from the activity) with the `oid`
    the MCP server saw, and prints **MATCH** or **MISMATCH**.
 
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (Entra apps, resources, flow and token-exchange diagrams)
+and [docs/DEPLOY.md](docs/DEPLOY.md) (step-by-step deployment).
+
 ## Layout
 
 | Path | Purpose |
