@@ -61,7 +61,7 @@ module openAiAccess 'openai-role.bicep' = {
   scope: resourceGroup(openAiResourceGroup)
   params: {
     openAiAccountName: openAiAccountName
-    principalId: resources.outputs.botIdentityPrincipalId
+    principalId: resources.outputs.botPrincipalId
   }
 }
 

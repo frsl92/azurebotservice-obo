@@ -11,7 +11,19 @@ Foundry features (only an LLM endpoint).
 | `obo-demo-bot-<env>` (single tenant) | **Bot identity and OBO client.** It is (a) the Azure Bot's `msaAppId`, (b) the client of the Bot Service OAuth connection, (c) the confidential client the Agents SDK uses for the OBO exchange, and (d) a **resource/API** itself: it exposes `access_as_user` so Teams SSO can obtain a token for it. Redirect URI `https://token.botframework.com/.auth/callback`. Teams desktop/mobile and web client IDs are pre-authorized on its scope. App ID URI is `api://<bot-fqdn>/<bot-app-id>` (set in `postprovision`). Has a client secret (azd env + Container App secret) and is configured to call the MCP API (`requiredResourceAccess`). |
 | `obo-demo-mcp-<env>` (single tenant) | **The protected backend API.** Exposes `api://<mcp-app-id>/access_as_user` with `requestedAccessTokenVersion = 2`. The bot app is pre-authorized, so no user consent prompt is needed. The MCP server accepts only tokens whose audience is this app. No secret; it calls nothing. |
 
-A service principal is created for each in your tenant. No Entra app exists for the LLM; the bot reaches it with a managed identity.
+A service principal is created for each in your tenant. No Entra app exists for the LLM; the bot app reaches it with its system-assigned managed identity.
+
+**Identities are kept separate by purpose:**
+
+| Identity | Type | Used for |
+|---|---|---|
+| Bot Entra app (`obo-demo-bot-*`) | App registration + secret | Azure Bot identity, OAuth connection, OBO client (the *user* path) |
+| MCP Entra app (`obo-demo-mcp-*`) | App registration | Audience of the OBO token (the *backend API*) |
+| Bot Container App identity | System-assigned MI | ACR pull + LLM access (the *workload* path) |
+| MCP Container App identity | System-assigned MI | ACR pull only |
+
+The Azure Bot resource uses the Entra app (`msaAppType: SingleTenant`); Bot Service does not support
+system-assigned identities, and OBO requires the confidential-client app anyway.
 
 ## 2. Azure resources (created by `infra/*.bicep`, subscription scope)
 
@@ -20,7 +32,8 @@ A service principal is created for each in your tenant. No Entra app exists for 
 | Resource group | `rg-<env>` | Container for everything | Housekeeping |
 | Log Analytics workspace | `log-<token>` | Container App logs | Lets you show in logs which `oid` the MCP server saw |
 | Container Registry (Basic) | `cr<token>` | Stores the two images | Built remotely by `azd deploy` |
-| User-assigned managed identity | `id-bot-<token>` | Pulls images (AcrPull); calls the LLM (Cognitive Services OpenAI User) | LLM access with no secrets and no Foundry feature; deliberately *not* involved in the user proof |
+| System-assigned managed identity (MCP app) | *(on `ca-mcp-<token>`)* | AcrPull on the registry only | Image pull only; no LLM access, no other roles |
+| System-assigned managed identity (bot app) | *(on `ca-bot-<token>`)* | AcrPull on the registry; Cognitive Services OpenAI User on your existing OpenAI account | LLM access with no secrets and no Foundry feature; deliberately *not* involved in the user proof |
 | Container Apps environment | `cae-<token>` | Shared host for both apps | Hosting |
 | Container App: MCP server | `ca-mcp-<token>` (public ingress, 8000) | **The "backend service"**: validates the JWT (Entra JWKS signature, issuer, audience, `access_as_user`, `oid`) and exposes the `whoami` tool | Where the user identity is *proven* |
 | Container App: bot | `ca-bot-<token>` (public ingress, 3978) | Agents SDK host + LangGraph agent; performs the OBO exchange; calls the MCP server with the user's token | The "Teams bot running a LangGraph agent" |

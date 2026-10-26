@@ -90,7 +90,8 @@ If uv reports 404 for package metadata from the feed, retry; the feed warms its 
 - Single tenant; public ingress on both apps; the MCP server is protected by JWT validation only.
 - The bot uses a client secret for the OBO exchange; a federated credential with the managed
   identity would be the production upgrade.
-- The LLM is reached with the bot's managed identity (Cognitive Services OpenAI User) or, locally,
+- The LLM is reached with the bot Container App's system-assigned managed identity (Cognitive Services OpenAI User)
+  or, locally,
   `AZURE_OPENAI_API_KEY`.
 - Infra, hooks and Docker images were only compile/syntax-checked and exercised locally (Docker
   daemon wasn't running); validate against your tenant before relying on them.

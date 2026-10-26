@@ -91,7 +91,9 @@ open the app and chat.
 | AADSTS65001 (consent) during OBO | `az ad app permission grant --id <BOT_APP_ID> --api <MCP_APP_ID> --scope access_as_user` |
 | MCP returns 401 with a token | Check `aud` (`<MCP_APP_ID>` or `api://<MCP_APP_ID>`), `scp`, token v2, `TENANT_ID` |
 | Bot returns 401 on `/api/messages` | Bot app id / secret / tenant env vars mismatch on the Container App |
-| LLM 401/403 | Managed identity lacks *Cognitive Services OpenAI User* on the account, or the account restricts network access |
+| LLM 401/403 | The bot Container App's system-assigned identity lacks *Cognitive Services OpenAI User* on the account, or the account restricts network access. Role assignments can take a few minutes to propagate |
+| Container App revision fails to pull the image right after `azd up` | AcrPull for the system-assigned identity may still be propagating; run `azd deploy` again |
+| After `azd provision` the apps show the hello-world image | Provisioning resets the placeholder image; run `azd deploy` |
 | Azure Bot connection deployment error | The OAuth connection parameter keys / `scopes` format are the least verified part of the Bicep; compare with `az bot authsetting list-providers --service Aadv2` and adjust `infra/resources.bicep` |
 | uv `404` while resolving packages | The feed warms its cache on first request; retry |
 
