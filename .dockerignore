@@ -1,0 +1,8 @@
+.venv/
+.azure/
+.git/
+dist/
+**/__pycache__/
+**/tests/
+**/.env
+*.zip
