@@ -148,16 +148,23 @@ async def on_error(context: TurnContext, error: Exception) -> None:
 
 
 async def entry_point(request: Request) -> Response:
+    sign_in_failed = False
     try:
         body = await request.json()
         if body.get("type") == "invoke":
             name = body.get("name")
             # Only sign-in failures carry non-secret details; tokenExchange values hold the SSO token.
             detail = body.get("value") if name == "signin/failure" else None
+            sign_in_failed = name == "signin/failure"
             logger.info("invoke activity: name=%s detail=%s", name, detail)
     except Exception:  # logging must never break the turn
         pass
-    return await start_agent_process(request, request.app["agent_app"], request.app["adapter"])
+    response = await start_agent_process(request, request.app["agent_app"], request.app["adapter"])
+    # Silent SSO failed: the SDK answers 501, which stops Teams from showing the interactive
+    # "Sign in" button. Acknowledge with 200 so Teams falls back to the regular OAuth card.
+    if sign_in_failed and response.status == 501:
+        return Response(status=200)
+    return response
 
 
 async def health(_request: Request) -> Response:

@@ -95,7 +95,7 @@ Invoke-GraphPatch $mcpAppId @{
 
 Invoke-GraphPatch $botAppId @{
     identifierUris = @("api://$botAppId")   # replaced with api://<fqdn>/<appId> in postprovision
-    web = @{ redirectUris = @('https://token.botframework.com/.auth/callback') }
+    web = @{ redirectUris = @('https://token.botframework.com/.auth/web/redirect', 'https://token.botframework.com/.auth/callback') }
     api = @{
         requestedAccessTokenVersion = 2
         oauth2PermissionScopes      = @(New-Scope $BotScopeId 'the OBO demo bot')
