@@ -54,6 +54,7 @@ azd env set OPENAI_ENDPOINT https://<account>.openai.azure.com/openai/v1
 azd env set OPENAI_DEPLOYMENT <chat deployment name>
 azd env set OPENAI_ACCOUNT_NAME <account name>
 azd env set OPENAI_RESOURCE_GROUP <account resource group>
+azd hooks run preprovision   # creates the Entra apps; azd needs their IDs before provisioning
 azd up
 ```
 

@@ -44,7 +44,11 @@ azd env set OPENAI_RESOURCE_GROUP  <resource group of the account>
 
 ## 4. Deploy
 
+azd reads the Bicep parameters before it runs hooks, so create the Entra apps first. This sets `TENANT_ID`,
+`BOT_APP_ID`, `MCP_APP_ID` and `BOT_CLIENT_SECRET`; otherwise `azd up` prompts for `botAppId`. It is safe to re-run.
+
 ```powershell
+azd hooks run preprovision
 azd up
 ```
 
