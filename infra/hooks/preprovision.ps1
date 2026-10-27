@@ -99,12 +99,19 @@ Invoke-GraphPatch $botAppId @{
     api = @{
         requestedAccessTokenVersion = 2
         oauth2PermissionScopes      = @(New-Scope $BotScopeId 'the OBO demo bot')
-        preAuthorizedApplications   = @($TeamsClients | ForEach-Object { @{ appId = $_; delegatedPermissionIds = @($BotScopeId) } })
     }
     requiredResourceAccess = @(@{
         resourceAppId = $mcpAppId
         resourceAccess = @(@{ id = $McpScopeId; type = 'Scope' })
     })
+}
+# Pre-authorization can only reference scopes that already exist, hence a separate PATCH.
+Invoke-GraphPatch $botAppId @{
+    api = @{
+        requestedAccessTokenVersion = 2
+        oauth2PermissionScopes      = @(New-Scope $BotScopeId 'the OBO demo bot')
+        preAuthorizedApplications   = @($TeamsClients | ForEach-Object { @{ appId = $_; delegatedPermissionIds = @($BotScopeId) } })
+    }
 }
 
 try { az ad app permission grant --id $botAppId --api $mcpAppId --scope access_as_user | Out-Null }
