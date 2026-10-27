@@ -36,7 +36,7 @@ azd env new obo-demo
 azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
 azd env set AZURE_LOCATION <region, e.g. swedencentral>
 
-azd env set OPENAI_ENDPOINT        https://<account>.openai.azure.com
+azd env set OPENAI_ENDPOINT        https://<account>.openai.azure.com/openai/v1   # the v1 form (or the plain account URL)
 azd env set OPENAI_DEPLOYMENT      <chat deployment name>
 azd env set OPENAI_ACCOUNT_NAME    <account name>
 azd env set OPENAI_RESOURCE_GROUP  <resource group of the account>

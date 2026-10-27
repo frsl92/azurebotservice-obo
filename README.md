@@ -50,7 +50,7 @@ Python is managed with **uv** (workspace); `pyproject.toml` sets the `msiopypi` 
 
 ```powershell
 azd env new obo-demo
-azd env set OPENAI_ENDPOINT https://<account>.openai.azure.com
+azd env set OPENAI_ENDPOINT https://<account>.openai.azure.com/openai/v1
 azd env set OPENAI_DEPLOYMENT <chat deployment name>
 azd env set OPENAI_ACCOUNT_NAME <account name>
 azd env set OPENAI_RESOURCE_GROUP <account resource group>

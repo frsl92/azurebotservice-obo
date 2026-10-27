@@ -49,7 +49,24 @@ def _headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
+def _is_v1_endpoint(endpoint: str) -> bool:
+    return endpoint.rstrip("/").endswith("/openai/v1")
+
+
 def build_llm(settings: Settings) -> BaseChatModel:
+    if _is_v1_endpoint(settings.azure_openai_endpoint):
+        # Azure OpenAI v1 API: plain OpenAI client, deployment name as the model, Entra token as the key.
+        from langchain_openai import ChatOpenAI
+
+        base_url = settings.azure_openai_endpoint.rstrip("/") + "/"
+        if settings.azure_openai_api_key:
+            return ChatOpenAI(base_url=base_url, model=settings.azure_openai_deployment, api_key=settings.azure_openai_api_key)
+
+        from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
+
+        provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
+        return ChatOpenAI(base_url=base_url, model=settings.azure_openai_deployment, api_key=provider)
+
     from langchain_openai import AzureChatOpenAI
 
     common = dict(
