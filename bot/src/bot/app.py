@@ -60,6 +60,22 @@ def _teams_identity(context: TurnContext) -> tuple[str | None, str | None]:
     return (getattr(sender, "aad_object_id", None), getattr(sender, "name", None))
 
 
+@AGENT_APP.before_turn
+async def log_oauth_cards(context: TurnContext, _state: TurnState) -> bool:
+    async def _log(_ctx, activities, send_next):
+        for activity in activities:
+            for attachment in activity.attachments or []:
+                content = attachment.content
+                resource = getattr(content, "token_exchange_resource", None)
+                if resource is not None:
+                    logger.info("oauth card: connection=%s tokenExchangeResource=%s",
+                                getattr(content, "connection_name", None), resource)
+        return await send_next()
+
+    context.on_send_activities(_log)
+    return True
+
+
 @AGENT_APP.conversation_update("membersAdded")
 async def on_members_added(context: TurnContext, _state: TurnState) -> None:
     await context.send_activity(f"Hi! {HELP}")

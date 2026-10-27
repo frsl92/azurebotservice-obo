@@ -27,7 +27,7 @@ def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
     manifest = {
         "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
         "manifestVersion": "1.17",
-        "version": "1.0.0",
+        "version": os.environ.get("TEAMS_APP_VERSION", "1.0.1"),
         "id": bot_app_id,
         "developer": {
             "name": "OBO Demo",
