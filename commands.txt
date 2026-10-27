@@ -1,0 +1,14 @@
+az login --tenant bd94f702-4255-45ae-9ec6-62155bcd308e --use-device-code
+az account set --subscription 39dbd2fd-7c64-432a-aaad-6c8c799e6dd3
+azd auth login --tenant-id bd94f702-4255-45ae-9ec6-62155bcd308e --use-device-code
+
+azd env new obo-demo
+azd env set AZURE_SUBSCRIPTION_ID 39dbd2fd-7c64-432a-aaad-6c8c799e6dd3
+azd env set AZURE_LOCATION swedencentral
+
+azd env set OPENAI_ENDPOINT        https://flopes-swc-foundry.openai.azure.com/openai/v1
+azd env set OPENAI_DEPLOYMENT      gpt-5.6-luna
+azd env set OPENAI_ACCOUNT_NAME    flopes-swc-foundry
+azd env set OPENAI_RESOURCE_GROUP  rg-foundry
+
+azd up

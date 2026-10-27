@@ -86,6 +86,7 @@ open the app and chat.
 | Symptom | Likely cause / fix |
 |---|---|
 | `preprovision` fails with insufficient privileges | You cannot create apps. Ask an admin to create apps named `obo-demo-bot-<env>` / `obo-demo-mcp-<env>` (the script reuses apps by display name) and re-run, or run `azd up` as an admin once |
+| `azd up` asks for the `botAppId` parameter | The Entra apps do not exist yet. Cancel and run `azd hooks run preprovision`, then `azd up` |
 | Sign-in card instead of silent SSO | Bot App ID URI differs from the connection's Token Exchange URL, or the Teams client IDs are not pre-authorized. Re-run `azd provision`; check the bot app's *Expose an API* blade |
 | Setting the identifier URI fails | Tenant app-management policy restricts `api://` URIs; adjust the policy |
 | AADSTS65001 (consent) during OBO | `az ad app permission grant --id <BOT_APP_ID> --api <MCP_APP_ID> --scope access_as_user` |
