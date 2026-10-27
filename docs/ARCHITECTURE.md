@@ -137,6 +137,37 @@ sequenceDiagram
 The proof: the same `oid` appears in the Teams activity (`aadObjectId`), in T1 and T2, and in the MCP server's
 `whoami` response (and its log line), and the MCP server never receives anything other than a token issued for that user.
 
+### Who is who: apps and tokens
+
+Three Entra identities and a managed identity take part. Each token is described by **who asked for it (client)**,
+**what it is for (audience)** and **who is in it (user)**.
+
+| Actor | What it is | Role |
+|---|---|---|
+| Teams client | Microsoft first-party apps (desktop/mobile and web client IDs, pre-authorized on the bot app) | Signs the user in and silently requests a token for the bot API |
+| **Bot app** `obo-demo-bot-*` | Your app registration | (1) Azure Bot identity, (2) client of the `mcp_sso` OAuth connection and of the OBO exchange, (3) the API that Teams SSO targets |
+| **MCP app** `obo-demo-mcp-*` | Your app registration | A pure API; its identifier URI is the audience the MCP server accepts |
+| Bot / MCP Container App identities | System-assigned managed identities | Workload identity only (ACR pull; the bot also gets LLM access). Never part of the user path |
+
+| Token | Requested by (client) | Audience (API it is for) | User inside | Used for |
+|---|---|---|---|---|
+| T0 | Bot Framework (not Entra) | Bot app id | none | Authenticates the inbound activity to the bot |
+| T_sso | Teams client | Bot app (`api://<bot-fqdn>/<botAppId>`) | User X | Given to Bot Service as proof of sign-in |
+| T1 | Bot Service, with the **bot app** as client | Bot app | User X | The OBO input; never sent to the MCP server |
+| T2 | Bot container, with the **bot app** + secret as client (OBO) | **MCP app** | User X (same `oid`) | Sent to the MCP server, which validates it |
+| T3 | Bot container's managed identity | Azure OpenAI | none | LLM calls |
+| T4 | Bot container, with the bot app as client (client credentials) | Bot Framework | none (the bot itself) | Sending replies and fetching the user token |
+
+How they chain:
+
+1. T_sso proves user X is signed in to Teams; Entra issued it for the bot API.
+2. Bot Service swaps it for T1: still for the bot API, same user.
+3. The bot swaps T1 for T2 through OBO: the audience changes from the bot app to the MCP app, the user (`oid`) does not.
+4. The MCP server accepts only a token whose `aud` is the MCP app and whose `scp` is `access_as_user`, and reads `oid` from it.
+
+The proof is that this `oid` equals the Teams `aadObjectId`; `azp` in T2 additionally shows the bot app made the
+request on X's behalf. T0, T3 and T4 carry no user, so they can't be confused with the user path.
+
 ## 5. Caveat
 
 The agent <-> MCP path is tested, but Teams SSO + the Bot Service connection + the live Entra exchange have **not**
