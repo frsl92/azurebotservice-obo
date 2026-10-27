@@ -75,6 +75,8 @@ var botEnv = [
   { name: 'AGENTAPPLICATION__USERAUTHORIZATION__HANDLERS__MCP__SETTINGS__OBOCONNECTIONNAME', value: 'SERVICE_CONNECTION' }
   { name: 'MCP_URL', value: 'https://${mcpFqdn}/mcp' }
   { name: 'MCP_SCOPE', value: 'api://${mcpAppId}/access_as_user' }
+  // Teams silent SSO failed with resourcematchfailed in the test tenant; use the interactive "Sign in" button.
+  { name: 'TEAMS_SILENT_SSO', value: 'false' }
   { name: 'AZURE_OPENAI_ENDPOINT', value: openAiEndpoint }
   { name: 'AZURE_OPENAI_DEPLOYMENT', value: openAiDeployment }
 ]

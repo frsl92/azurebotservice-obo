@@ -60,19 +60,26 @@ def _teams_identity(context: TurnContext) -> tuple[str | None, str | None]:
     return (getattr(sender, "aad_object_id", None), getattr(sender, "name", None))
 
 
+SILENT_SSO = environ.get("TEAMS_SILENT_SSO", "true").lower() == "true"
+
+
 @AGENT_APP.before_turn
-async def log_oauth_cards(context: TurnContext, _state: TurnState) -> bool:
-    async def _log(_ctx, activities, send_next):
+async def prepare_oauth_cards(context: TurnContext, _state: TurnState) -> bool:
+    async def _on_send(_ctx, activities, send_next):
         for activity in activities:
             for attachment in activity.attachments or []:
                 content = attachment.content
                 resource = getattr(content, "token_exchange_resource", None)
-                if resource is not None:
-                    logger.info("oauth card: connection=%s tokenExchangeResource=%s",
-                                getattr(content, "connection_name", None), resource)
+                if resource is None:
+                    continue
+                logger.info("oauth card: connection=%s tokenExchangeResource=%s silent_sso=%s",
+                            getattr(content, "connection_name", None), resource, SILENT_SSO)
+                if not SILENT_SSO:
+                    # Without the exchange resource Teams skips silent SSO and shows the "Sign in" button.
+                    content.token_exchange_resource = None
         return await send_next()
 
-    context.on_send_activities(_log)
+    context.on_send_activities(_on_send)
     return True
 
 
