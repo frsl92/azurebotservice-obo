@@ -132,6 +132,15 @@ async def on_error(context: TurnContext, error: Exception) -> None:
 
 
 async def entry_point(request: Request) -> Response:
+    try:
+        body = await request.json()
+        if body.get("type") == "invoke":
+            name = body.get("name")
+            # Only sign-in failures carry non-secret details; tokenExchange values hold the SSO token.
+            detail = body.get("value") if name == "signin/failure" else None
+            logger.info("invoke activity: name=%s detail=%s", name, detail)
+    except Exception:  # logging must never break the turn
+        pass
     return await start_agent_process(request, request.app["agent_app"], request.app["adapter"])
 
 
