@@ -24,8 +24,11 @@ Teams user ──SSO──► Azure Bot Service ──► Bot (Container App)   
 5. `/whoami` in the bot compares the Teams `aadObjectId` (from the activity) with the `oid`
    the MCP server saw, and prints **MATCH** or **MISMATCH**.
 
-More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (Entra apps, resources, flow and token-exchange diagrams)
-and [docs/DEPLOY.md](docs/DEPLOY.md) (step-by-step deployment).
+Documentation:
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how it is built. Entra app registrations, Azure Bot Service and OAuth
+  connection, Teams manifest, what the bot container does for OBO, MCP token validation, resources, sequence diagram and tokens.
+- [docs/DEPLOY.md](docs/DEPLOY.md): step-by-step deployment, Teams / Copilot / group chat install, troubleshooting.
 
 ## Layout
 
@@ -58,18 +61,20 @@ azd hooks run preprovision   # creates the Entra apps; azd needs their IDs befor
 azd up
 ```
 
-- `preprovision` creates/updates the two Entra apps (MCP API and bot), exposes the
-  `access_as_user` scopes, pre-authorizes the Teams clients and the bot, and stores a bot client
-  secret in the azd environment.
-- Bicep deploys the infra; `postprovision` writes `dist/teams-app.zip` (the bot identifier URI
-  `api://botid-<bot app id>` is set in `preprovision`).
-- Sideload `dist/teams-app.zip` in Teams (Apps → Manage your apps → Upload a custom app).
+- `preprovision` creates/updates the two Entra apps (MCP API and bot): exposes `access_as_user`, sets the bot
+  identifier URI `api://botid-<bot app id>`, pre-authorizes the Teams / Microsoft 365 / Outlook clients on the bot
+  app and the bot app on the MCP app, adds the Bot Service redirect URIs, and stores a bot client secret in the azd
+  environment.
+- Bicep deploys the infra: Container Apps, ACR, Azure Bot, Teams channel and the `mcp_sso` OAuth connection.
+  `azd deploy` builds the images remotely; `postprovision` writes `dist/teams-app.zip`.
+- Sideload `dist/teams-app.zip` in Teams (Apps → Manage your apps → Upload a custom app). The app is named
+  `OBO Demo (<azd env name>)`. It works in 1:1 chats, group chats and Microsoft 365 Copilot.
 
 ## Demo script
 
-1. Open the bot in Teams; the first message may trigger a one-time consent/sign-in.
-2. Send `/whoami`. Expect the Teams identity, the identity the MCP server saw, and **MATCH**.
-3. Ask "Who am I according to the backend?" — the LangGraph agent calls the MCP `whoami` tool
+1. Open the bot in Teams. Sign-in is silent; no prompt is expected.
+2. Send `/whoami`. Expect the Teams identity, the claims of the OBO token, the identity the MCP server saw, and **Match**.
+3. Ask "Who am I? Use the backend tool to check which user it sees." The LangGraph agent calls the MCP `whoami` tool
    with your OBO token.
 4. Repeat with a second user: each sees their own identity. `/signout` clears the cached token.
 
@@ -92,7 +97,6 @@ If uv reports 404 for package metadata from the feed, retry; the feed warms its 
 - The bot uses a client secret for the OBO exchange; a federated credential with the managed
   identity would be the production upgrade.
 - The LLM is reached with the bot Container App's system-assigned managed identity (Cognitive Services OpenAI User)
-  or, locally,
-  `AZURE_OPENAI_API_KEY`.
-- Infra, hooks and Docker images were only compile/syntax-checked and exercised locally (Docker
-  daemon wasn't running); validate against your tenant before relying on them.
+  or, locally, `AZURE_OPENAI_API_KEY`.
+- Sign-in state is kept in memory, so the bot runs as a single replica. Use shared storage to scale out.
+- Bot SSO is not supported in Teams channels, so the app is available in personal and group chats only.

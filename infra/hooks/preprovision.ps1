@@ -7,8 +7,9 @@ Creates (idempotently) the two Entra app registrations the demo needs and stores
                  exposes access_as_user (Teams SSO), pre-authorizes the Teams clients,
                  is allowed to call the MCP API on behalf of users
 
-The bot's final App ID URI needs the Container App FQDN, which is only known after provisioning,
-so postprovision.ps1 finishes that part.
+The bot's App ID URI (api://botid-<appId>, the format Teams requires for bot SSO) is set here, because it must equal
+the Token Exchange URL on the Azure Bot OAuth connection and webApplicationInfo.resource in the Teams manifest.
+Re-running is safe; the client secret is only created once.
 #>
 $ErrorActionPreference = 'Stop'
 

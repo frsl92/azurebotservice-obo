@@ -54,12 +54,12 @@ azd up
 
 In order:
 
-1. **preprovision** creates/updates `obo-demo-bot-<env>` and `obo-demo-mcp-<env>`, exposes the scopes,
-   pre-authorizes clients, tries admin consent, creates a bot client secret (kept in the azd env) and records
-   `TENANT_ID`, `BOT_APP_ID`, `MCP_APP_ID`.
-2. **provision** creates the Azure resources.
+1. **preprovision** creates/updates `obo-demo-bot-<env>` and `obo-demo-mcp-<env>` (settings in
+   [ARCHITECTURE.md](ARCHITECTURE.md#2-entra-app-registrations)), tries admin consent, creates a bot client secret
+   (kept in the azd env) and records `TENANT_ID`, `BOT_APP_ID`, `MCP_APP_ID`.
+2. **provision** creates the Azure resources, including the Azure Bot, Teams channel and `mcp_sso` connection.
 3. **deploy** remote-builds the `bot` and `mcp` images in ACR and updates both Container Apps.
-4. **postprovision** writes `dist\teams-app.zip` (the bot App ID URI `api://botid-<bot-app-id>` was already set by preprovision).
+4. **postprovision** writes `dist\teams-app.zip`. The bot's name in Teams is `OBO Demo (<azd env name>)`.
 
 ## 5. Check the backend before Teams
 
@@ -78,18 +78,24 @@ open the app and chat.
 
 The same package also works in other surfaces:
 
-- **Group chats**: the manifest enables the `groupChat` scope. Add the app to a group chat and `@mention` it. Each sender signs in
-  separately, and the consent card is shown only to the person who mentions the bot first. Bot SSO is not supported in channels,
-  so the `team` scope is intentionally omitted. `/whoami` prints claims, so use it only in chats you are happy to share them with.
+- **Group chats**: the manifest enables the `groupChat` scope. Add the app to a group chat (Apps -> Manage your apps -> Add to a chat,
+  or add it from the chat's **+** button) and `@mention` it. Each sender signs in separately. Bot SSO is not supported in
+  channels, so the `team` scope is intentionally omitted. `/whoami` prints claims, so use it only in chats you are happy to share
+  them with.
 - **Microsoft 365 Copilot**: the manifest declares the bot as a custom engine agent (`copilotAgents.customEngineAgents`, manifest
-  1.22). After installing, open Microsoft 365 Copilot (Teams or m365.cloud.microsoft) and pick the agent from the agent list. The
-  Microsoft 365 and Outlook client IDs are pre-authorized on the bot app by preprovision. Allow a few minutes for it to appear.
+  1.22). After installing, open Microsoft 365 Copilot (Teams or m365.cloud.microsoft) and pick the agent from the agent list.
+  The Microsoft 365 and Outlook client IDs are pre-authorized on the bot app by preprovision. Allow a few minutes for it to
+  appear. If Copilot shows a sign-in card, it falls back to the interactive flow.
+
+After changing the manifest, bump `TEAMS_APP_VERSION` (`azd env set TEAMS_APP_VERSION 1.1.2`), run
+`azd hooks run postprovision`, and upload the new zip as an update. Teams keeps one chat history per bot, so a re-installed
+app shows the earlier conversation.
 
 ## 7. Run the demo
 
-1. Send `/whoami`. Expect your Teams name and `aadObjectId`, the claims of the OBO token (`aud`, `scp`, `azp`, `oid`),
-   what the MCP server reported, and **Match**.
-2. Ask "Who am I according to the backend?" to see the LangGraph agent call the `whoami` tool.
+1. Send `/whoami` (or click the **Who am I?** prompt). Expect your Teams name and `aadObjectId`, the claims of the OBO token
+   (`aud`, `scp`, `azp`, `oid`), what the MCP server reported, and **Match**.
+2. Ask "Who am I? Use the backend tool to check which user it sees." to see the LangGraph agent call the `whoami` tool.
 3. Have a second user install the app and repeat: each sees their own `oid`.
 4. Portal -> Container App `ca-mcp-*` -> Log stream shows `whoami called by oid=...`.
 5. `/signout` clears the stored token; the next message signs in again.
@@ -98,22 +104,23 @@ The same package also works in other surfaces:
 
 | Symptom | Likely cause / fix |
 |---|---|
-| `preprovision` fails with insufficient privileges | You cannot create apps. Ask an admin to create apps named `obo-demo-bot-<env>` / `obo-demo-mcp-<env>` (the script reuses apps by display name) and re-run, or run `azd up` as an admin once |
-| `azd up` asks for the `botAppId` parameter | The Entra apps do not exist yet. Cancel and run `azd hooks run preprovision`, then `azd up` |
-| Sign-in card instead of silent SSO | Bot App ID URI differs from the connection's Token Exchange URL, or the Teams client IDs are not pre-authorized. Re-run `azd provision`; check the bot app's *Expose an API* blade |
-| Setting the identifier URI fails | Tenant app-management policy restricts `api://` URIs; adjust the policy |
-| AADSTS65001 (consent) during OBO | `az ad app permission grant --id <BOT_APP_ID> --api <MCP_APP_ID> --scope access_as_user` |
-| MCP returns 401 with a token | Check `aud` (`<MCP_APP_ID>` or `api://<MCP_APP_ID>`), `scp`, token v2, `TENANT_ID` |
-| Bot returns 401 on `/api/messages` | Bot app id / secret / tenant env vars mismatch on the Container App |
-| LLM 401/403 | The bot Container App's system-assigned identity lacks *Cognitive Services OpenAI User* on the account, or the account restricts network access. Role assignments can take a few minutes to propagate |
-| Container App revision fails to pull the image right after `azd up` | AcrPull for the system-assigned identity may still be propagating; run `azd deploy` again |
+| `preprovision` fails with insufficient privileges | You cannot create apps. Ask an admin to create apps named `obo-demo-bot-<env>` / `obo-demo-mcp-<env>` (the script reuses apps by display name) and re-run |
+| Setting the identifier URI fails | A tenant app-management policy restricts `api://` URIs; adjust the policy |
+| `azd up` asks for the `botAppId` parameter | The Entra apps do not exist yet. Cancel, run `azd hooks run preprovision`, then `azd up` |
 | After `azd provision` the apps show the hello-world image | Provisioning resets the placeholder image; run `azd deploy` |
-| Azure Bot connection deployment error | The OAuth connection parameter keys / `scopes` format are the least verified part of the Bicep; compare with `az bot authsetting list-providers --service Aadv2` and adjust `infra/resources.bicep` |
+| `azd deploy` does not change Container App env vars | It only updates the image. Run `azd provision`, or `az containerapp update --set-env-vars NAME=value` |
+| Container App revision fails to pull the image right after `azd up` | AcrPull may still be propagating; run `azd deploy` again |
+| LLM 401/403 | The bot's managed identity lacks *Cognitive Services OpenAI User* on the account, the role is still propagating, or the account restricts network access |
 | uv `404` while resolving packages | The feed warms its cache on first request; retry |
-| `/whoami` gets no reply; bot log shows `signin/failure` with `resourcematchfailed` | Teams silent SSO failed. Set `teamsSilentSso` to `false` (Bicep parameter, default `true`) or run `az containerapp update --set-env-vars TEAMS_SILENT_SSO=false`. The bot then removes the card's `tokenExchangeResource`, so Teams shows a plain **Sign in** button (interactive flow) |
-| Interactive **Sign in** button fails | The bot Entra app needs the web redirect URIs `https://token.botframework.com/.auth/web/redirect` and `https://token.botframework.com/.auth/callback` (added by `preprovision`) |
-| Bot ignores messages after a failed sign-in | The SDK keeps a pending sign-in flow in memory and treats the next message as a magic code. Restart the revision to clear it |
-| `azd deploy` does not change Container App env vars | Also run `az containerapp update --set-env-vars NAME=value` |
+| Bot log shows `signin/failure` with `resourcematchfailed` | Silent SSO resource mismatch. The bot app's Application ID URI, the connection's `TokenExchangeUrl` and the manifest `webApplicationInfo.resource` must all be `api://botid-<BOT_APP_ID>` ([ARCHITECTURE.md](ARCHITECTURE.md#3-azure-bot-service)). Re-run `azd provision` and `azd hooks run postprovision`, then reinstall the app |
+| A sign-in card is shown instead of silent SSO | The Teams / M365 client is not pre-authorized on the bot app's `access_as_user` scope (the bot log prints the client's `azp` on every `tokenExchange`), or the pre-authorization was just added and is still propagating (a few minutes). Fallback: `TEAMS_SILENT_SSO=false` (Bicep `teamsSilentSso`) always shows a plain **Sign in** button |
+| Interactive **Sign in** fails | The bot app is missing the redirect URIs `https://token.botframework.com/.auth/web/redirect` and `.../.auth/callback` (set by `preprovision`) |
+| AADSTS65001 (consent) during OBO | `az ad app permission grant --id <BOT_APP_ID> --api <MCP_APP_ID> --scope access_as_user` |
+| "I couldn't get a token for the backend" | Transient: Bot Service can answer 404 right after silent SSO. The bot already retries; send the message again |
+| Bot ignores messages or says "Sign-in failed. Max retries reached" | A stale pending sign-in flow in memory treats your message as a magic code. Send `/signout`, or restart the revision (`az containerapp revision restart`). Reinstalling the app also clears it |
+| MCP returns 401 with a token | Check `aud` (`<MCP_APP_ID>` or `api://<MCP_APP_ID>`), `scp`, token v2 and `TENANT_ID` |
+| Bot returns 401 on `/api/messages` | Bot app id / secret / tenant mismatch in the Container App's `CONNECTIONS__SERVICE_CONNECTION__*` settings or the Azure Bot |
+| Prompts insert the wrong text or the app does not update | Teams caches manifests. Bump `TEAMS_APP_VERSION`, rebuild and upload again |
 
 ## 9. Update and clean up
 
