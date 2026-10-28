@@ -24,6 +24,7 @@ def _png(width: int, height: int, rgba: tuple[int, int, int, int]) -> bytes:
 
 
 def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
+    app_name = os.environ.get("TEAMS_APP_NAME", "OBO Demo Agent")[:30]  # Teams limits the short name to 30 chars
     manifest = {
         "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
         "manifestVersion": "1.17",
@@ -35,7 +36,7 @@ def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
             "privacyUrl": f"https://{bot_fqdn}",
             "termsOfUseUrl": f"https://{bot_fqdn}",
         },
-        "name": {"short": "OBO Demo Agent", "full": "OBO Demo Agent"},
+        "name": {"short": app_name, "full": app_name},
         "description": {
             "short": "Shows Teams user identity flowing to a backend via on-behalf-of.",
             "full": "A LangGraph agent that calls an MCP server using an on-behalf-of token for the signed-in Teams user.",

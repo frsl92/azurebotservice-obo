@@ -27,5 +27,6 @@ finally { Remove-Item $file -ErrorAction SilentlyContinue }
 
 $env:BOT_APP_ID = $botAppId
 $env:BOT_FQDN = $botFqdn
+$env:TEAMS_APP_NAME = "OBO Demo ($env:AZURE_ENV_NAME)"   # the bot's name in Teams follows the azd environment
 uv run python scripts/make_teams_package.py
 if ($LASTEXITCODE -ne 0) { throw 'Teams package generation failed' }

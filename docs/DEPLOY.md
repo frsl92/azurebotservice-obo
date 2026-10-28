@@ -101,7 +101,7 @@ open the app and chat.
 | After `azd provision` the apps show the hello-world image | Provisioning resets the placeholder image; run `azd deploy` |
 | Azure Bot connection deployment error | The OAuth connection parameter keys / `scopes` format are the least verified part of the Bicep; compare with `az bot authsetting list-providers --service Aadv2` and adjust `infra/resources.bicep` |
 | uv `404` while resolving packages | The feed warms its cache on first request; retry |
-| `/whoami` gets no reply; bot log shows `signin/failure` with `resourcematchfailed` | Teams silent SSO failed. The bot sets `TEAMS_SILENT_SSO=false` (see `infra/resources.bicep`), which removes the card's `tokenExchangeResource` so Teams shows a plain **Sign in** button (interactive flow). To retry silent SSO set it to `true` with `az containerapp update --set-env-vars TEAMS_SILENT_SSO=true` |
+| `/whoami` gets no reply; bot log shows `signin/failure` with `resourcematchfailed` | Teams silent SSO failed. Set `teamsSilentSso` to `false` (Bicep parameter, default `true`) or run `az containerapp update --set-env-vars TEAMS_SILENT_SSO=false`. The bot then removes the card's `tokenExchangeResource`, so Teams shows a plain **Sign in** button (interactive flow) |
 | Interactive **Sign in** button fails | The bot Entra app needs the web redirect URIs `https://token.botframework.com/.auth/web/redirect` and `https://token.botframework.com/.auth/callback` (added by `preprovision`) |
 | Bot ignores messages after a failed sign-in | The SDK keeps a pending sign-in flow in memory and treats the next message as a magic code. Restart the revision to clear it |
 | `azd deploy` does not change Container App env vars | Also run `az containerapp update --set-env-vars NAME=value` |

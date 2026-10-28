@@ -32,6 +32,10 @@ param openAiAccountName string
 @description('Resource group of the existing Azure OpenAI account.')
 param openAiResourceGroup string
 
+@allowed(['true', 'false'])
+@description('Try Teams silent SSO. When false the bot shows an interactive "Sign in" button instead.')
+param teamsSilentSso string = 'true'
+
 var tags = { 'azd-env-name': environmentName }
 
 resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
@@ -53,6 +57,7 @@ module resources 'resources.bicep' = {
     botClientSecret: botClientSecret
     openAiEndpoint: openAiEndpoint
     openAiDeployment: openAiDeployment
+    teamsSilentSso: teamsSilentSso
   }
 }
 

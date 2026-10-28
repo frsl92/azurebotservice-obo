@@ -8,6 +8,7 @@ param mcpAppId string
 param botClientSecret string
 param openAiEndpoint string
 param openAiDeployment string
+param teamsSilentSso string
 
 var token = toLower(uniqueString(subscription().id, environmentName))
 var botAppName = 'ca-bot-${token}'
@@ -75,8 +76,8 @@ var botEnv = [
   { name: 'AGENTAPPLICATION__USERAUTHORIZATION__HANDLERS__MCP__SETTINGS__OBOCONNECTIONNAME', value: 'SERVICE_CONNECTION' }
   { name: 'MCP_URL', value: 'https://${mcpFqdn}/mcp' }
   { name: 'MCP_SCOPE', value: 'api://${mcpAppId}/access_as_user' }
-  // Teams silent SSO failed with resourcematchfailed in the test tenant; use the interactive "Sign in" button.
-  { name: 'TEAMS_SILENT_SSO', value: 'false' }
+  // 'false' falls back to the interactive "Sign in" button if Teams silent SSO fails (resourcematchfailed).
+  { name: 'TEAMS_SILENT_SSO', value: teamsSilentSso }
   { name: 'AZURE_OPENAI_ENDPOINT', value: openAiEndpoint }
   { name: 'AZURE_OPENAI_DEPLOYMENT', value: openAiDeployment }
 ]
@@ -181,7 +182,7 @@ resource bot 'Microsoft.BotService/botServices@2022-09-15' = {
   kind: 'azurebot'
   sku: { name: 'F0' }
   properties: {
-    displayName: 'OBO Demo Agent'
+    displayName: take('OBO Demo (${environmentName})', 30)
     endpoint: 'https://${botFqdn}/api/messages'
     msaAppId: botAppId
     msaAppTenantId: tenantId
