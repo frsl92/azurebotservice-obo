@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+name: teams-obo-demo
+
+infra:
+  provider: bicep
+  path: infra
+
+hooks:
+  preprovision:
+    shell: pwsh
+    run: ./infra/hooks/preprovision.ps1
+  postprovision:
+    shell: pwsh
+    run: ./infra/hooks/postprovision.ps1
+
+services:
+  bot:
+    project: ./bot
+    host: containerapp
+    language: docker
+    docker:
+      path: ./Dockerfile
+      context: ..
+      remoteBuild: true
+  mcp:
+    project: ./mcp_server
+    host: containerapp
+    language: docker
+    docker:
+      path: ./Dockerfile
+      context: ..
+      remoteBuild: true
