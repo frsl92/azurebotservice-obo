@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from os import environ
@@ -51,8 +52,14 @@ HELP = (
 
 async def _mcp_token(context: TurnContext) -> str | None:
     """OBO exchange: Bot Service user token (aud=bot app) -> token for the MCP API (aud=MCP app)."""
-    response = await AGENT_APP.auth.exchange_token(context, [settings.mcp_scope], HANDLER)
-    return response.token or None
+    # Right after a silent SSO exchange the Bot Service can briefly answer 404 ("user not found"), so retry.
+    for attempt in range(4):
+        response = await AGENT_APP.auth.exchange_token(context, [settings.mcp_scope], HANDLER)
+        if response.token:
+            return response.token
+        logger.info("no user token yet (attempt %d); retrying", attempt + 1)
+        await asyncio.sleep(1.5)
+    return None
 
 
 def _teams_identity(context: TurnContext) -> tuple[str | None, str | None]:
@@ -81,6 +88,16 @@ async def prepare_oauth_cards(context: TurnContext, _state: TurnState) -> bool:
 
     context.on_send_activities(_on_send)
     return True
+
+
+@AGENT_APP.installation_update()
+async def on_installation_update(context: TurnContext, _state: TurnState) -> None:
+    # A sign-in flow left over from an earlier install would otherwise swallow the user's next messages
+    # (treated as a magic code) until it runs out of retries. Start every (re)install clean.
+    try:
+        await AGENT_APP.auth.sign_out(context, HANDLER)
+    except Exception:  # noqa: BLE001 - best effort cleanup
+        logger.exception("could not reset sign-in state on installationUpdate")
 
 
 @AGENT_APP.conversation_update("membersAdded")
