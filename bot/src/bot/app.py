@@ -105,7 +105,7 @@ async def on_members_added(context: TurnContext, _state: TurnState) -> None:
     await context.send_activity(f"Hi! {HELP}")
 
 
-@AGENT_APP.message(re.compile(r"^/signout$", re.IGNORECASE))
+@AGENT_APP.message(re.compile(r"^(/signout|forget my sign-in)$", re.IGNORECASE))
 async def on_signout(context: TurnContext, _state: TurnState) -> None:
     await AGENT_APP.auth.sign_out(context, HANDLER)
     await context.send_activity("Signed out. Send another message to sign in again.")
@@ -116,7 +116,7 @@ async def on_help(context: TurnContext, _state: TurnState) -> None:
     await context.send_activity(HELP)
 
 
-@AGENT_APP.message(re.compile(r"^/whoami$", re.IGNORECASE), auth_handlers=[HANDLER])
+@AGENT_APP.message(re.compile(r"^(/whoami|prove who the backend authenticated)$", re.IGNORECASE), auth_handlers=[HANDLER])
 async def on_whoami(context: TurnContext, _state: TurnState) -> None:
     token = await _mcp_token(context)
     if not token:

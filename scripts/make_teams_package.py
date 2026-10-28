@@ -28,7 +28,7 @@ def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
     manifest = {
         "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
         "manifestVersion": "1.22",
-        "version": os.environ.get("TEAMS_APP_VERSION", "1.1.0"),
+        "version": os.environ.get("TEAMS_APP_VERSION", "1.1.1"),
         "id": os.environ.get("TEAMS_MANIFEST_ID", bot_app_id),  # any GUID; a new one gives Teams a fresh app identity
         "developer": {
             "name": "OBO Demo",
@@ -54,8 +54,8 @@ def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
                     {
                         "scopes": ["personal", "groupChat"],
                         "commands": [
-                            {"title": "/whoami", "description": "Prove who the backend authenticated"},
-                            {"title": "/signout", "description": "Forget my sign-in"},
+                            {"title": "Who am I?", "description": "/whoami"},
+                            {"title": "Sign out", "description": "/signout"},
                         ],
                     }
                 ],
