@@ -28,7 +28,7 @@ def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
         "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
         "manifestVersion": "1.17",
         "version": os.environ.get("TEAMS_APP_VERSION", "1.0.1"),
-        "id": bot_app_id,
+        "id": os.environ.get("TEAMS_MANIFEST_ID", bot_app_id),  # any GUID; a new one gives Teams a fresh app identity
         "developer": {
             "name": "OBO Demo",
             "websiteUrl": f"https://{bot_fqdn}",
