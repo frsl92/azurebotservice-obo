@@ -1,8 +1,8 @@
 #requires -Version 7
 <#
-Runs after the infrastructure exists. Sets the bot app's final App ID URI (api://<bot-fqdn>/<appId>),
-which Teams SSO requires and which must equal the Token Exchange URL on the Azure Bot OAuth connection,
-then builds the Teams app package.
+Runs after the infrastructure exists and builds the Teams app package. The bot app's App ID URI
+(api://botid-<appId>, the format Teams requires for bot SSO) is set in preprovision and must equal the
+Token Exchange URL on the Azure Bot OAuth connection and webApplicationInfo.resource in the manifest.
 #>
 $ErrorActionPreference = 'Stop'
 
@@ -14,16 +14,6 @@ function Get-AzdValue([string]$Name) {
 
 $botAppId = Get-AzdValue 'BOT_APP_ID'
 $botFqdn = Get-AzdValue 'BOT_FQDN'
-
-$objectId = az ad app show --id $botAppId --query id -o tsv
-$file = New-TemporaryFile
-try {
-    @{ identifierUris = @("api://$botFqdn/$botAppId") } | ConvertTo-Json | Set-Content -Path $file -Encoding utf8
-    az rest --method PATCH --uri "https://graph.microsoft.com/v1.0/applications/$objectId" `
-        --headers 'Content-Type=application/json' --body "@$file" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'Failed to set the bot App ID URI' }
-}
-finally { Remove-Item $file -ErrorAction SilentlyContinue }
 
 $env:BOT_APP_ID = $botAppId
 $env:BOT_FQDN = $botFqdn

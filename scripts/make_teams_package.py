@@ -28,7 +28,7 @@ def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
     manifest = {
         "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
         "manifestVersion": "1.17",
-        "version": os.environ.get("TEAMS_APP_VERSION", "1.0.1"),
+        "version": os.environ.get("TEAMS_APP_VERSION", "1.0.2"),
         "id": os.environ.get("TEAMS_MANIFEST_ID", bot_app_id),  # any GUID; a new one gives Teams a fresh app identity
         "developer": {
             "name": "OBO Demo",
@@ -62,7 +62,7 @@ def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
         ],
         "permissions": ["identity", "messageTeamMembers"],
         "validDomains": [bot_fqdn, "token.botframework.com"],
-        "webApplicationInfo": {"id": bot_app_id, "resource": f"api://{bot_fqdn}/{bot_app_id}"},
+        "webApplicationInfo": {"id": bot_app_id, "resource": f"api://botid-{bot_app_id}"},
     }
 
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,7 @@ Foundry features (only an LLM endpoint).
 
 | App registration | Role in the demo |
 |---|---|
-| `obo-demo-bot-<env>` (single tenant) | **Bot identity and OBO client.** It is (a) the Azure Bot's `msaAppId`, (b) the client of the Bot Service OAuth connection, (c) the confidential client the Agents SDK uses for the OBO exchange, and (d) a **resource/API** itself: it exposes `access_as_user` so Teams SSO can obtain a token for it. Redirect URI `https://token.botframework.com/.auth/callback`. Teams desktop/mobile and web client IDs are pre-authorized on its scope. App ID URI is `api://<bot-fqdn>/<bot-app-id>` (set in `postprovision`). Has a client secret (azd env + Container App secret) and is configured to call the MCP API (`requiredResourceAccess`). |
+| `obo-demo-bot-<env>` (single tenant) | **Bot identity and OBO client.** It is (a) the Azure Bot's `msaAppId`, (b) the client of the Bot Service OAuth connection, (c) the confidential client the Agents SDK uses for the OBO exchange, and (d) a **resource/API** itself: it exposes `access_as_user` so Teams SSO can obtain a token for it. Redirect URI `https://token.botframework.com/.auth/callback`. Teams desktop/mobile and web client IDs are pre-authorized on its scope. App ID URI is `api://botid-<bot-app-id>` (the format Teams requires for bot SSO; set in `preprovision`). Has a client secret (azd env + Container App secret) and is configured to call the MCP API (`requiredResourceAccess`). |
 | `obo-demo-mcp-<env>` (single tenant) | **The protected backend API.** Exposes `api://<mcp-app-id>/access_as_user` with `requestedAccessTokenVersion = 2`. The bot app is pre-authorized, so no user consent prompt is needed. The MCP server accepts only tokens whose audience is this app. No secret; it calls nothing. |
 
 A service principal is created for each in your tenant. No Entra app exists for the LLM; the bot app reaches it with its system-assigned managed identity.
@@ -44,7 +44,7 @@ system-assigned identities, and OBO requires the confidential-client app anyway.
 | Existing Azure OpenAI deployment | *(you provide it)* | The agent's LLM | Only LLM access is used |
 
 `dist/teams-app.zip` is a build artifact, not an Azure resource. Its manifest has `webApplicationInfo`
-(bot app ID + `api://<bot-fqdn>/<bot-app-id>`), which enables SSO.
+(bot app ID + `api://botid-<bot-app-id>`), which enables SSO.
 
 ## 3. Component flow
 
@@ -93,7 +93,7 @@ sequenceDiagram
     B-->>A: No token yet -> OAuth card with SSO info
 
     Note over T,E: Teams SSO (silent; Teams clients are pre-authorized)
-    T->>E: Acquire token for api://bot-fqdn/botAppId/access_as_user
+    T->>E: Acquire token for api://botid-botAppId/access_as_user
     E-->>T: T_sso (aud = bot app, scp = access_as_user, oid = X)
     T->>B: signin/tokenExchange invoke with T_sso
     B->>E: Exchange T_sso (connection mcp_sso: bot app id + secret, TokenExchangeUrl)
@@ -128,7 +128,7 @@ sequenceDiagram
 | # | Token | Issuer -> audience | Subject | Held by | Purpose |
 |---|---|---|---|---|---|
 | T0 | Bot Framework JWT | Bot Framework -> bot app id | channel service | Bot app (validates) | Authenticates inbound activities |
-| T_sso | Teams SSO token | Entra -> `api://<bot-fqdn>/<bot-app-id>` | user X | Teams client -> Bot Service | Proves X is signed in; input to the exchange |
+| T_sso | Teams SSO token | Entra -> `api://botid-<bot-app-id>` | user X | Teams client -> Bot Service | Proves X is signed in; input to the exchange |
 | T1 | Bot-API user token | Entra -> bot app (`access_as_user`) | user X | Bot Service token store, handed to the bot | **The OBO assertion**; never sent to the MCP server |
 | T2 | MCP user token | Entra -> MCP app (`access_as_user`) | user X (same `oid`), `azp` = bot | Bot app, in memory per turn | Bearer to the backend; **what the MCP server validates** |
 | T3 | Managed identity token | Entra -> Azure OpenAI | the managed identity | Bot app | LLM access only; no user identity |
@@ -152,7 +152,7 @@ Three Entra identities and a managed identity take part. Each token is described
 | Token | Requested by (client) | Audience (API it is for) | User inside | Used for |
 |---|---|---|---|---|
 | T0 | Bot Framework (not Entra) | Bot app id | none | Authenticates the inbound activity to the bot |
-| T_sso | Teams client | Bot app (`api://<bot-fqdn>/<botAppId>`) | User X | Given to Bot Service as proof of sign-in |
+| T_sso | Teams client | Bot app (`api://botid-<botAppId>`) | User X | Given to Bot Service as proof of sign-in |
 | T1 | Bot Service, with the **bot app** as client | Bot app | User X | The OBO input; never sent to the MCP server |
 | T2 | Bot container, with the **bot app** + secret as client (OBO) | **MCP app** | User X (same `oid`) | Sent to the MCP server, which validates it |
 | T3 | Bot container's managed identity | Azure OpenAI | none | LLM calls |
@@ -172,4 +172,4 @@ request on X's behalf. T0, T3 and T4 carry no user, so they can't be confused wi
 
 The agent <-> MCP path is tested, but Teams SSO + the Bot Service connection + the live Entra exchange have **not**
 been run end to end. Likely first-deploy adjustments: the Bot connection parameter casing / `scopes` value, and
-tenant app-management policy for the `api://<fqdn>/<appId>` identifier URI.
+tenant app-management policy for the `api://botid-<appId>` identifier URI.

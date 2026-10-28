@@ -55,7 +55,7 @@ resource env 'Microsoft.App/managedEnvironments@2024-03-01' = {
 // External ingress FQDNs are deterministic, which avoids a circular dependency with the bot endpoint.
 var botFqdn = '${botAppName}.${env.properties.defaultDomain}'
 var mcpFqdn = '${mcpAppName}.${env.properties.defaultDomain}'
-var botIdentifierUri = 'api://${botFqdn}/${botAppId}'
+var botIdentifierUri = 'api://botid-${botAppId}'  // Teams requires the botid- format for bot SSO
 
 var mcpEnv = [
   { name: 'TENANT_ID', value: tenantId }

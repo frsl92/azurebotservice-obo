@@ -59,7 +59,7 @@ In order:
    `TENANT_ID`, `BOT_APP_ID`, `MCP_APP_ID`.
 2. **provision** creates the Azure resources.
 3. **deploy** remote-builds the `bot` and `mcp` images in ACR and updates both Container Apps.
-4. **postprovision** sets the bot App ID URI to `api://<bot-fqdn>/<bot-app-id>` and writes `dist\teams-app.zip`.
+4. **postprovision** writes `dist\teams-app.zip` (the bot App ID URI `api://botid-<bot-app-id>` was already set by preprovision).
 
 ## 5. Check the backend before Teams
 

@@ -14,7 +14,7 @@ Teams user ──SSO──► Azure Bot Service ──► Bot (Container App)   
 ## How the identity proof works
 
 1. In Teams, the user is signed in with SSO. The Bot Service OAuth connection (`mcp_sso`)
-   hands the bot a token for the **bot's own API** (`api://<bot-fqdn>/<bot app id>`).
+   hands the bot a token for the **bot's own API** (`api://botid-<bot app id>`).
 2. The Agents SDK performs the MSAL **OBO exchange** with the bot app's credential to get a
    token for the **MCP API** (`api://<mcp app id>/access_as_user`).
 3. The agent calls the MCP server with that token as `Authorization: Bearer`. The token never
@@ -61,8 +61,8 @@ azd up
 - `preprovision` creates/updates the two Entra apps (MCP API and bot), exposes the
   `access_as_user` scopes, pre-authorizes the Teams clients and the bot, and stores a bot client
   secret in the azd environment.
-- Bicep deploys the infra; `postprovision` sets the bot identifier URI to
-  `api://<bot-fqdn>/<bot app id>` and writes `dist/teams-app.zip`.
+- Bicep deploys the infra; `postprovision` writes `dist/teams-app.zip` (the bot identifier URI
+  `api://botid-<bot app id>` is set in `preprovision`).
 - Sideload `dist/teams-app.zip` in Teams (Apps → Manage your apps → Upload a custom app).
 
 ## Demo script

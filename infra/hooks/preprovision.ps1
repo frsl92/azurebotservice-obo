@@ -94,7 +94,7 @@ Invoke-GraphPatch $mcpAppId @{
 }
 
 Invoke-GraphPatch $botAppId @{
-    identifierUris = @("api://$botAppId")   # replaced with api://<fqdn>/<appId> in postprovision
+    identifierUris = @("api://botid-$botAppId")   # Teams bot SSO requires the botid- format
     web = @{ redirectUris = @('https://token.botframework.com/.auth/web/redirect', 'https://token.botframework.com/.auth/callback') }
     api = @{
         requestedAccessTokenVersion = 2
