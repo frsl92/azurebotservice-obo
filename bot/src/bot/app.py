@@ -173,6 +173,7 @@ async def on_error(context: TurnContext, error: Exception) -> None:
 
 async def entry_point(request: Request) -> Response:
     sign_in_failed = False
+    exchange = False
     try:
         body = await request.json()
         if body.get("type") == "invoke":
@@ -181,9 +182,20 @@ async def entry_point(request: Request) -> Response:
             detail = body.get("value") if name == "signin/failure" else None
             sign_in_failed = name == "signin/failure"
             logger.info("invoke activity: name=%s detail=%s", name, detail)
+            if name == "signin/tokenExchange":
+                exchange = True
+                claims = decode_claims_unverified((body.get("value") or {}).get("token") or "") or {}
+                conv = body.get("conversation") or {}
+                logger.info(
+                    "tokenExchange from client azp=%s aud=%s scp=%s conversationType=%s channelId=%s",
+                    claims.get("azp"), claims.get("aud"), claims.get("scp"), conv.get("conversationType"), body.get("channelId"),
+                )
     except Exception:  # logging must never break the turn
         pass
     response = await start_agent_process(request, request.app["agent_app"], request.app["adapter"])
+    if exchange:
+        # InvokeResponse body only holds status/failureDetail (e.g. 412 = Bot Service could not exchange the token).
+        logger.info("tokenExchange result: http=%s body=%s", response.status, getattr(response, "text", None))
     # Silent SSO failed: the SDK answers 501, which stops Teams from showing the interactive
     # "Sign in" button. Acknowledge with 200 so Teams falls back to the regular OAuth card.
     if sign_in_failed and response.status == 501:
