@@ -26,9 +26,9 @@ def _png(width: int, height: int, rgba: tuple[int, int, int, int]) -> bytes:
 def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
     app_name = os.environ.get("TEAMS_APP_NAME", "OBO Demo Agent")[:30]  # Teams limits the short name to 30 chars
     manifest = {
-        "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
-        "manifestVersion": "1.17",
-        "version": os.environ.get("TEAMS_APP_VERSION", "1.0.2"),
+        "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
+        "manifestVersion": "1.22",
+        "version": os.environ.get("TEAMS_APP_VERSION", "1.1.0"),
         "id": os.environ.get("TEAMS_MANIFEST_ID", bot_app_id),  # any GUID; a new one gives Teams a fresh app identity
         "developer": {
             "name": "OBO Demo",
@@ -46,12 +46,13 @@ def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
         "bots": [
             {
                 "botId": bot_app_id,
-                "scopes": ["personal"],
+                # personal is required by M365 Copilot; bot SSO works in 1:1 and group chats but not in channels
+                "scopes": ["personal", "groupChat"],
                 "supportsFiles": False,
                 "isNotificationOnly": False,
                 "commandLists": [
                     {
-                        "scopes": ["personal"],
+                        "scopes": ["personal", "groupChat"],
                         "commands": [
                             {"title": "/whoami", "description": "Prove who the backend authenticated"},
                             {"title": "/signout", "description": "Forget my sign-in"},
@@ -60,6 +61,7 @@ def build(bot_app_id: str, bot_fqdn: str, out_dir: Path) -> Path:
                 ],
             }
         ],
+        "copilotAgents": {"customEngineAgents": [{"type": "bot", "id": bot_app_id}]},
         "permissions": ["identity", "messageTeamMembers"],
         "validDomains": [bot_fqdn, "token.botframework.com"],
         "webApplicationInfo": {"id": bot_app_id, "resource": f"api://botid-{bot_app_id}"},

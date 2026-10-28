@@ -76,6 +76,15 @@ curl.exe -s -o NUL -w "%{http_code}`n" https://$bot/healthz      # 200
 Teams -> **Apps** -> **Manage your apps** -> **Upload an app** -> **Upload a custom app** -> `dist\teams-app.zip`, then
 open the app and chat.
 
+The same package also works in other surfaces:
+
+- **Group chats**: the manifest enables the `groupChat` scope. Add the app to a group chat and `@mention` it. Each sender signs in
+  separately, and the consent card is shown only to the person who mentions the bot first. Bot SSO is not supported in channels,
+  so the `team` scope is intentionally omitted. `/whoami` prints claims, so use it only in chats you are happy to share them with.
+- **Microsoft 365 Copilot**: the manifest declares the bot as a custom engine agent (`copilotAgents.customEngineAgents`, manifest
+  1.22). After installing, open Microsoft 365 Copilot (Teams or m365.cloud.microsoft) and pick the agent from the agent list. The
+  Microsoft 365 and Outlook client IDs are pre-authorized on the bot app by preprovision. Allow a few minutes for it to appear.
+
 ## 7. Run the demo
 
 1. Send `/whoami`. Expect your Teams name and `aadObjectId`, the claims of the OBO token (`aud`, `scp`, `azp`, `oid`),

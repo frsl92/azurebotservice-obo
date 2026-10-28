@@ -15,7 +15,13 @@ $ErrorActionPreference = 'Stop'
 # Stable IDs so the script is re-runnable.
 $McpScopeId = '6c1b9d2e-3f4a-4c55-9a0e-2f7b8d1a5e01'
 $BotScopeId = '0d7a5c3b-8e21-4f6a-b4c9-1a2e3f4d5b02'
-$TeamsClients = @('1fec8e78-bce4-4aaf-ab1b-5451cc387264', '5e3ce6c0-2b1f-4285-8d4b-75ee78787346') # Teams desktop/mobile, Teams web
+# Teams desktop/mobile, Teams web, Microsoft 365 web, Microsoft 365 desktop, Microsoft 365 mobile/Office desktop, Outlook web, Outlook mobile
+$TeamsClients = @(
+    '1fec8e78-bce4-4aaf-ab1b-5451cc387264', '5e3ce6c0-2b1f-4285-8d4b-75ee78787346',
+    '4765445b-32c6-49b0-83e6-1d93765276ca', '0ec893e0-5785-4de6-99da-4ed124e5296c',
+    'd3590ed6-52b3-4102-aeff-aad2292ab01c', 'bc59ab01-8403-45c6-8796-ac3ef710b3e3',
+    '27922004-5251-4030-b22d-91ecd9a37ea4'
+)
 
 function Get-AzdValue([string]$Name) {
     $value = azd env get-value $Name 2>$null
